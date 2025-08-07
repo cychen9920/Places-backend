@@ -1,44 +1,58 @@
-// places.js
+// imports
 const express = require('express');
 const router = express.Router();
+const Place = require('./models/Place');  // Mongoose Place model
 
-// In-memory array to store places
-let places = [];
-let currentId = 1;  // simple id generator
-
-// GET /places - return all saved places
-router.get('/', (req, res) => {
-  res.json(places);
+// GET places from MongoDB
+router.get('/', async (req, res) => {
+  try {
+    const places = await Place.find(); //find all Places
+    res.json(places); //array of places, as JSON
+  }
+  catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
-// POST /places - add a new place
-router.post('/', (req, res) => {
-    console.log('POST /places body:', req.body);
-    const { name, type, notes, lat, lng } = req.body;
 
-    if (!name || !type || lat === undefined || lng === undefined) {
-        return res.status(400).json({ error: 'Missing required fields' });
-    }
+// POST new place to mongoDB
+router.post('/', async (req, res) => {
+  const { name, type, notes, lat, lng } = req.body;
 
-    const newPlace = {
-        id: currentId++,
-        name,
-        type,
-        notes: notes || '',
-        position: { lat, lng },
-    };
+  //missing fields
+  if (!name || !type || lat === undefined || lng === undefined) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
 
-    places.push(newPlace);
-    res.status(201).json(newPlace);
+  try {
+    //create new Place
+    const newPlace = new Place({
+      name,
+      type,
+      notes: notes || '',
+      position: { lat, lng }
+    });
+    //save new Place to mongoDB
+    const savedPlace = await newPlace.save();
+    //send saved Place w/ 201 created status
+    res.status(201).json(savedPlace);
+  }
+  catch (err) {
+    res.status(500).json({ error: err.message });
+    console.error(err);
+  }
 });
 
-// DELETE /places/:id - delete a place by id
-router.delete('/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-
-  places = places.filter(place => place.id !== id);
-
-  res.status(204).send(); // 204 No Content
+// DELETE a place by ID from mongoDB
+//:id is Place's mongoDB _id
+router.delete('/:id', async (req, res) => {
+  try {
+    await Place.findByIdAndDelete(req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
+//export router to use in server.js
 module.exports = router;
