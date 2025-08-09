@@ -2,52 +2,62 @@
 const express = require('express');
 const router = express.Router();
 const Place = require('./models/Place');  // Mongoose Place model
+const authToken = require('./authentication/user_auth');
 
-// GET places from MongoDB
-router.get('/', async (req, res) => {
+// GET places from MongoDB (only for given user)
+router.get('/', authToken, async (req, res) => {
   try {
-    const places = await Place.find(); //find all Places
-    res.json(places); //array of places, as JSON
-  }
-  catch (err) {
+    const userId = req.user.userId;
+    const places = await Place.find({ user: userId });
+    res.json(places); // array of places as JSON
+  } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 
-// POST new place to mongoDB
-router.post('/', async (req, res) => {
+// POST new place to mongoDB (assoc with current user)
+router.post('/', authToken, async (req, res) => {
   const { name, type, notes, lat, lng } = req.body;
 
-  //missing fields
+  // Missing fields
   if (!name || !type || lat === undefined || lng === undefined) {
     return res.status(400).json({ error: 'Missing fields' });
   }
 
   try {
-    //create new Place
+    const userId = req.user.userId;
+
     const newPlace = new Place({
       name,
       type,
       notes: notes || '',
-      position: { lat, lng }
+      position: { lat, lng },
+      user: userId // Associate with logged-in user
     });
-    //save new Place to mongoDB
+
     const savedPlace = await newPlace.save();
-    //send saved Place w/ 201 created status
+
+    console.log('New place saved!')
     res.status(201).json(savedPlace);
   }
   catch (err) {
     res.status(500).json({ error: err.message });
-    console.error(err);
+    console.error('Error saving place:', err);
   }
 });
 
-// DELETE a place by ID from mongoDB
-//:id is Place's mongoDB _id
-router.delete('/:id', async (req, res) => {
+// DELETE a place by ID from mongoDB (IFF belongs to user)
+router.delete('/:id', authToken, async (req, res) => {
   try {
-    await Place.findByIdAndDelete(req.params.id);
+    const userId = req.user.userId;
+    const place = await Place.findOne({ _id: req.params.id, user: userId });
+
+    if (!place) {
+      return res.status(404).json({ error: 'Place not found or unauthorized' });
+    }
+
+    await place.deleteOne();
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

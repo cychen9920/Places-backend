@@ -12,6 +12,7 @@ const PlaceSchema = new mongoose.Schema({
     lng: { type: Number, required: true }
   },
   // add userId later during auth step
+  user: {type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true}
 });
 
 //export model 'Place' for places.js

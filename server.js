@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors'); //cross-origin requests
 const connectDB = require('./database');
 const placesRouter = require('./places');
+const authRouter = require('./auth');
 
 const startServer = async () => {
   //first, try to connect to mongoDB
@@ -14,7 +15,7 @@ const startServer = async () => {
     app.use(express.json()); //for parsing JSON requests
 
     app.use('/places', placesRouter); //requests to places handled by places.js
-
+    app.use('/auth', authRouter); //requests to userauth handled by auth.js
     const PORT = process.env.PORT || 4000;
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
