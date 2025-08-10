@@ -1,16 +1,18 @@
-// imports
 const express = require('express');
-const router = express.Router();
+const router = express.Router(); // create express router
 const Place = require('./models/Place');  // Mongoose Place model
 const authToken = require('./authentication/user_auth');
 
 // GET places from MongoDB (only for given user)
 router.get('/', authToken, async (req, res) => {
   try {
+    //get user id from JWT
     const userId = req.user.userId;
+    //find all places in MongoDB associated with userId
     const places = await Place.find({ user: userId });
     res.json(places); // array of places as JSON
-  } catch (err) {
+  }
+  catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -31,7 +33,7 @@ router.post('/', authToken, async (req, res) => {
     const newPlace = new Place({
       name,
       type,
-      notes: notes || '',
+      notes: notes || '', //notes not required
       position: { lat, lng },
       user: userId // Associate with logged-in user
     });
@@ -51,6 +53,8 @@ router.post('/', authToken, async (req, res) => {
 router.delete('/:id', authToken, async (req, res) => {
   try {
     const userId = req.user.userId;
+
+    //try to find place matching _id and user
     const place = await Place.findOne({ _id: req.params.id, user: userId });
 
     if (!place) {
@@ -59,7 +63,8 @@ router.delete('/:id', authToken, async (req, res) => {
 
     await place.deleteOne();
     res.status(204).send();
-  } catch (err) {
+  }
+  catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });

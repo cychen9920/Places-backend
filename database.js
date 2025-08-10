@@ -2,7 +2,6 @@
 
 const mongoose = require('mongoose');
 
-//TODO: later when deploying make MONGODB_URI; for now using local
 const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/placesapp';
 
 const connectDB = async () => {
